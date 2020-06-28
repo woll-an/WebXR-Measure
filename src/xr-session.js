@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
+import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 var container;
 var camera, scene, renderer;
@@ -9,6 +10,57 @@ var reticle;
 
 var hitTestSource = null;
 var hitTestSourceRequested = false;
+
+let measurements = [];
+
+function matrixToVector(matrix) {
+  let vector = new THREE.Vector3();
+  vector.setFromMatrixPosition(matrix);
+  return vector;
+}
+
+function getLineFromMeasurements() {
+  var lineMaterial = new THREE.LineBasicMaterial({
+    color: 0xffffff,
+    linewidth: 5,
+    linecap: 'round'
+  });
+
+  var lineGeometry = new THREE.BufferGeometry().setFromPoints(measurements);
+  return new THREE.Line(lineGeometry, lineMaterial);
+}
+
+function initReticle() {
+  let ring = new THREE.RingBufferGeometry(0.07, 0.1, 32).rotateX(- Math.PI / 2);
+  let dot = new THREE.CircleBufferGeometry(0.01, 32).rotateX(- Math.PI / 2);
+  reticle = new THREE.Mesh(
+    BufferGeometryUtils.mergeBufferGeometries([ring, dot]),
+    new THREE.MeshBasicMaterial()
+  );
+  reticle.matrixAutoUpdate = false;
+  reticle.visible = false;
+}
+
+function initRenderer() {
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = true;
+}
+
+function getMarkerFromSelection(matrix) {
+  var circleGeometry = new THREE.CircleBufferGeometry(0.01, 32).rotateX(- Math.PI / 2);
+  var material = new THREE.MeshPhongMaterial({ color: 0xffffff * Math.random() });
+  var mesh = new THREE.Mesh(circleGeometry, material);
+  mesh.position.setFromMatrixPosition(matrix);
+  return mesh
+}
+
+function getDistanceFromMeasurements() {
+  let p1 = measurements[0];
+  let p2 = measurements[1];
+  return p1.distanceTo(p2);
+}
 
 function initXR() {
 
@@ -22,54 +74,32 @@ function initXR() {
   var light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
   light.position.set(0.5, 1, 0.25);
   scene.add(light);
-
-  //
-
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.xr.enabled = true;
+  initRenderer()
   container.appendChild(renderer.domElement);
 
-  //
-
   document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
-
-  //
-
-  var geometry = new THREE.CylinderBufferGeometry(0.1, 0.1, 0.2, 32).translate(0, 0.1, 0);
-
-  function onSelect() {
-
-    if (reticle.visible) {
-
-      var material = new THREE.MeshPhongMaterial({ color: 0xffffff * Math.random() });
-      var mesh = new THREE.Mesh(geometry, material);
-      mesh.position.setFromMatrixPosition(reticle.matrix);
-      mesh.scale.y = Math.random() * 2 + 1;
-      scene.add(mesh);
-
-    }
-
-  }
 
   controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect);
   scene.add(controller);
-
-  reticle = new THREE.Mesh(
-    new THREE.RingBufferGeometry(0.15, 0.2, 32).rotateX(- Math.PI / 2),
-    new THREE.MeshBasicMaterial()
-  );
-  reticle.matrixAutoUpdate = false;
-  reticle.visible = false;
+  initReticle();
   scene.add(reticle);
-
-  //
 
   window.addEventListener('resize', onWindowResize, false);
 
   animate()
+}
+
+function onSelect() {
+  if (reticle.visible) {
+    measurements.push(matrixToVector(reticle.matrix));
+    if (measurements.length == 2) {
+      console.log(getDistanceFromMeasurements());
+      scene.add(getLineFromMeasurements());
+      measurements = [];
+    }
+    scene.add(getMarkerFromSelection(reticle.matrix));
+  }
 }
 
 function onWindowResize() {
@@ -80,8 +110,6 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 
 }
-
-//
 
 function animate() {
 
