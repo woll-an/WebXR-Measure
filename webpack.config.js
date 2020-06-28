@@ -3,19 +3,7 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: ['@babel/polyfill', 'webxr-polyfill', './src/index'],
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,
-        use: 'ts-loader',
-        exclude: /node_modules/
-      }
-    ]
-  },
-  resolve: {
-    extensions: [ ".tsx", ".ts", ".js" ]
-  },
+  entry: ['@babel/polyfill', 'webxr-polyfill', './src/index.js'],
   output: {
     filename: '[name].bundle.js',
     path: path.resolve(__dirname, 'dist')
