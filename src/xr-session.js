@@ -13,6 +13,31 @@ var hitTestSourceRequested = false;
 
 let measurements = [];
 
+function makeTextSprite( text )
+{
+  var size = 20
+	var canvas = document.createElement("canvas");
+  var context = canvas.getContext("2d");
+
+  context.strokeStyle = "white";
+  context.font = size + "pt Arial";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillStyle = "black";
+  context.strokeText(text, canvas.width / 2, canvas.height / 2)
+  context.fillText(text, canvas.width / 2, canvas.height / 2);
+	
+	// canvas contents will be used for a texture
+  var texture = new THREE.Texture(canvas)
+  texture.needsUpdate = true;
+  var spriteMaterial = new THREE.SpriteMaterial({ map: texture} );
+  spriteMaterial.depthWrite = false;
+  spriteMaterial.depthTest = false;
+	var sprite = new THREE.Sprite(spriteMaterial);
+	sprite.scale.set(0.25,0.25,1.0);
+	return sprite;	
+}
+
 function matrixToVector(matrix) {
   let vector = new THREE.Vector3();
   vector.setFromMatrixPosition(matrix);
@@ -57,7 +82,8 @@ function getMarkerFromSelection(matrix) {
 }
 
 function getDistance(points) {
-  return points[0].distanceTo(points[1]);
+  if (points.length == 2)
+    return points[0].distanceTo(points[1]);
 }
 
 function initXR() {
@@ -86,6 +112,9 @@ function onSelect() {
     if (measurements.length == 2) {
       console.log(getDistance(measurements));
       scene.add(getLine(measurements));
+      var sprite = makeTextSprite(Math.round(getDistance(measurements)*100) + ' cm');
+      sprite.position.setFromMatrixPosition(reticle.matrix);
+      scene.add(sprite);
       measurements = [];
     }
     scene.add(getMarkerFromSelection(reticle.matrix));
