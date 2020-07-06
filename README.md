@@ -4,6 +4,8 @@ Augmented Reality Measure with WebXR
 
 ## Instructions
 
+Navigate to [Demo](https://wonderful-albattani-95489f.netlify.app/) with your mobile device.
+
 After you pressed the *START AR* Button
 1. Move your phone around, until you see a marker on your screen.
 2. Move marker to first measurement point.
