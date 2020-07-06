@@ -14,17 +14,17 @@ let measurements = [];
 let reticle;
 let currentLine = null;
 
-function makeTextSprite( text )
+function makeTextSprite(text, points)
 {
-  const size = 20
+  const size = 40
 	let canvas = document.createElement("canvas");
   let context = canvas.getContext("2d");
 
-  context.strokeStyle = "white";
-  context.font = size + "pt Arial";
+  // context.strokeStyle = "white";
+  context.font = size + "pt Helvetica";
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.fillStyle = "black";
+  context.fillStyle = "white";
   context.strokeText(text, canvas.width / 2, canvas.height / 2)
   context.fillText(text, canvas.width / 2, canvas.height / 2);
 	
@@ -35,7 +35,10 @@ function makeTextSprite( text )
   spriteMaterial.depthWrite = false;
   spriteMaterial.depthTest = false;
 	let sprite = new THREE.Sprite(spriteMaterial);
-	sprite.scale.set(0.25,0.25,1.0);
+  sprite.scale.set(0.1,0.1,1.0);
+  let line = new THREE.Line3(...points)
+  let center = line.getCenter();
+  sprite.position.set(center.x, center.y, center.z)
 	return sprite;	
 }
 
@@ -113,8 +116,7 @@ function onSelect() {
     measurements.push(matrixToVector(reticle.matrix));
     if (measurements.length == 2) {
       let distance = Math.round(getDistance(measurements)*100);
-      let sprite = makeTextSprite(distance + ' cm');
-      sprite.position.setFromMatrixPosition(reticle.matrix);
+      let sprite = makeTextSprite(distance + ' cm', measurements);
       scene.add(sprite);
       measurements = [];
       currentLine = null;
