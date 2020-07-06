@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/woll-an/WebXR-Measure#readme",
   "devDependencies": {
+    "css-loader": "^3.6.0",
     "html-webpack-plugin": "^4.3.0",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.12",

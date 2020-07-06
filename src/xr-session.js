@@ -14,10 +14,9 @@ let measurements = [];
 let reticle;
 let currentLine = null;
 
-function makeTextSprite(text, points)
-{
+function makeTextSprite(text, points) {
   const size = 40
-	let canvas = document.createElement("canvas");
+  let canvas = document.createElement("canvas");
   let context = canvas.getContext("2d");
 
   // context.strokeStyle = "white";
@@ -27,19 +26,19 @@ function makeTextSprite(text, points)
   context.fillStyle = "white";
   context.strokeText(text, canvas.width / 2, canvas.height / 2)
   context.fillText(text, canvas.width / 2, canvas.height / 2);
-	
-	// canvas contents will be used for a texture
+
+  // canvas contents will be used for a texture
   let texture = new THREE.Texture(canvas)
   texture.needsUpdate = true;
-  let spriteMaterial = new THREE.SpriteMaterial({ map: texture} );
+  let spriteMaterial = new THREE.SpriteMaterial({ map: texture });
   spriteMaterial.depthWrite = false;
   spriteMaterial.depthTest = false;
-	let sprite = new THREE.Sprite(spriteMaterial);
-  sprite.scale.set(0.1,0.1,1.0);
+  let sprite = new THREE.Sprite(spriteMaterial);
+  sprite.scale.set(0.1, 0.1, 1.0);
   let line = new THREE.Line3(...points)
   let center = line.getCenter();
   sprite.position.set(center.x, center.y, center.z)
-	return sprite;	
+  return sprite;
 }
 
 function matrixToVector(matrix) {
@@ -115,7 +114,7 @@ function onSelect() {
   if (reticle.visible) {
     measurements.push(matrixToVector(reticle.matrix));
     if (measurements.length == 2) {
-      let distance = Math.round(getDistance(measurements)*100);
+      let distance = Math.round(getDistance(measurements) * 100);
       let sprite = makeTextSprite(distance + ' cm', measurements);
       scene.add(sprite);
       measurements = [];

@@ -1,0 +1,11 @@
+ol {
+  padding-left: 4em;
+}
+
+#ARButton {
+  color: black !important;
+  width: 10em !important;
+  font-size: 4em !important;
+  padding: 0.5em !important;
+  left: calc(50% - 5em) !important;
+}
