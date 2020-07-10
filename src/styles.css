@@ -2,6 +2,12 @@ ol {
   padding-left: 4em;
 }
 
+.label {
+  text-shadow: -1px 1px 1px rgb(0,0,0);
+  margin-left: 25px;
+  font-size: 20px;
+}
+
 #ARButton {
   color: black !important;
   width: 10em !important;

@@ -1,44 +1,24 @@
 import * as THREE from 'three';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
 let container;
-let camera, scene, renderer;
+let camera, scene, renderer, labelRenderer, light;
 let controller;
 
 let hitTestSource = null;
 let hitTestSourceRequested = false;
 
 let measurements = [];
+let centers = [];
 
 let reticle;
 let currentLine = null;
 
-function makeTextSprite(text, points) {
-  const size = 40
-  let canvas = document.createElement("canvas");
-  let context = canvas.getContext("2d");
-
-  // context.strokeStyle = "white";
-  context.font = size + "pt Helvetica";
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.fillStyle = "white";
-  context.strokeText(text, canvas.width / 2, canvas.height / 2)
-  context.fillText(text, canvas.width / 2, canvas.height / 2);
-
-  // canvas contents will be used for a texture
-  let texture = new THREE.Texture(canvas)
-  texture.needsUpdate = true;
-  let spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-  spriteMaterial.depthWrite = false;
-  spriteMaterial.depthTest = false;
-  let sprite = new THREE.Sprite(spriteMaterial);
-  sprite.scale.set(0.1, 0.1, 1.0);
+function getCenterPoint(points) {
   let line = new THREE.Line3(...points)
-  let center = line.getCenter();
-  sprite.position.set(center.x, center.y, center.z)
-  return sprite;
+  return line.getCenter();
 }
 
 function matrixToVector(matrix) {
@@ -85,6 +65,27 @@ function initRenderer() {
   renderer.xr.enabled = true;
 }
 
+function initLabelRenderer() {
+  labelRenderer = new CSS2DRenderer();
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.domElement.style.position = 'absolute';
+  labelRenderer.domElement.style.top = '0px';
+  labelRenderer.domElement.style.pointerEvents = 'none';
+}
+
+function initCamera() {
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+}
+
+function initLight() {
+  light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+  light.position.set(0.5, 1, 0.25);
+}
+
+function initScene() {
+  scene = new THREE.Scene();
+}
+
 function getDistance(points) {
   if (points.length == 2)
     return points[0].distanceTo(points[1]);
@@ -93,19 +94,28 @@ function getDistance(points) {
 function initXR() {
   container = document.createElement('div');
   document.body.appendChild(container);
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-  let light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-  light.position.set(0.5, 1, 0.25);
+
+  initScene();
+
+  initCamera();
+
+  initLight();
   scene.add(light);
+
   initRenderer()
+  initLabelRenderer()
   container.appendChild(renderer.domElement);
+  container.appendChild(labelRenderer.domElement);
+
   document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
+
   controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect);
   scene.add(controller);
+
   initReticle();
   scene.add(reticle);
+
   window.addEventListener('resize', onWindowResize, false);
   animate()
 }
@@ -115,8 +125,18 @@ function onSelect() {
     measurements.push(matrixToVector(reticle.matrix));
     if (measurements.length == 2) {
       let distance = Math.round(getDistance(measurements) * 100);
-      let sprite = makeTextSprite(distance + ' cm', measurements);
-      scene.add(sprite);
+      let center = getCenterPoint(measurements);
+      centers.push(center);
+
+      let text = document.createElement('div');
+      text.className = 'label';
+      text.style.color = 'rgb(255,255,255)';
+      text.textContent = distance + ' cm';
+
+      let label = new CSS2DObject(text);
+      label.position.copy(measurements[1]);
+      scene.add(label);
+
       measurements = [];
       currentLine = null;
     } else {
@@ -130,6 +150,7 @@ function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 function animate() {
@@ -169,7 +190,7 @@ function render(timestamp, frame) {
     }
   }
   renderer.render(scene, camera);
-
+  labelRenderer.render(scene, camera);
 }
 
 export { initXR }
