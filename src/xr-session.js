@@ -1,20 +1,36 @@
 import * as THREE from 'three';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
-import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-let container;
-let camera, scene, renderer, labelRenderer, light;
+let container, labelContainer;
+let camera, scene, renderer, light;
 let controller;
 
 let hitTestSource = null;
 let hitTestSourceRequested = false;
 
 let measurements = [];
-let centers = [];
+let labels = [];
 
 let reticle;
 let currentLine = null;
+
+let width, height;
+
+function toScreenPosition(point, camera)
+{
+  var vector = new THREE.Vector3();
+  
+  vector.copy(point);
+  vector.project(camera);
+  
+  vector.x = Math.round((   vector.x + 1 ) * width  / 2 );
+  vector.y = Math.round(( - vector.y + 1 ) * height / 2 );
+  vector.z = 0;
+
+  return vector
+
+};
 
 function getCenterPoint(points) {
   let line = new THREE.Line3(...points)
@@ -65,16 +81,16 @@ function initRenderer() {
   renderer.xr.enabled = true;
 }
 
-function initLabelRenderer() {
-  labelRenderer = new CSS2DRenderer();
-  labelRenderer.setSize(window.innerWidth, window.innerHeight);
-  labelRenderer.domElement.style.position = 'absolute';
-  labelRenderer.domElement.style.top = '0px';
-  labelRenderer.domElement.style.pointerEvents = 'none';
+function initLabelContainer() {
+  labelContainer = document.createElement('div');
+  labelContainer.style.position = 'absolute';
+  labelContainer.style.top = '0px';
+  labelContainer.style.pointerEvents = 'none';
+  labelContainer.setAttribute('id', 'container');
 }
 
 function initCamera() {
-  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+  camera = new THREE.PerspectiveCamera(70, width / height, 0.01, 20);
 }
 
 function initLight() {
@@ -95,6 +111,9 @@ function initXR() {
   container = document.createElement('div');
   document.body.appendChild(container);
 
+  width = window.innerWidth;
+  height = window.innerHeight;
+
   initScene();
 
   initCamera();
@@ -103,11 +122,16 @@ function initXR() {
   scene.add(light);
 
   initRenderer()
-  initLabelRenderer()
   container.appendChild(renderer.domElement);
-  container.appendChild(labelRenderer.domElement);
 
-  document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
+  initLabelContainer()
+  container.appendChild(labelContainer);
+
+  document.body.appendChild(ARButton.createButton(renderer, {
+    optionalFeatures: ["dom-overlay"],
+    domOverlay: {root: document.querySelector('#container')}, 
+    requiredFeatures: ['hit-test']
+  }));
 
   controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect);
@@ -125,17 +149,14 @@ function onSelect() {
     measurements.push(matrixToVector(reticle.matrix));
     if (measurements.length == 2) {
       let distance = Math.round(getDistance(measurements) * 100);
-      let center = getCenterPoint(measurements);
-      centers.push(center);
 
       let text = document.createElement('div');
       text.className = 'label';
       text.style.color = 'rgb(255,255,255)';
       text.textContent = distance + ' cm';
+      document.querySelector('#container').appendChild(text);
 
-      let label = new CSS2DObject(text);
-      label.position.copy(measurements[1]);
-      scene.add(label);
+      labels.push({div: text, point: getCenterPoint(measurements)});
 
       measurements = [];
       currentLine = null;
@@ -147,10 +168,11 @@ function onSelect() {
 }
 
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  width = window.innerWidth;
+  height = window.innerHeight;
+  camera.aspect = width/height;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(width, height);
 }
 
 function animate() {
@@ -188,9 +210,16 @@ function render(timestamp, frame) {
         updateLine(reticle.matrix);
       }
     }
+
+    labels.map((label) => {
+      let pos = toScreenPosition(label.point, renderer.xr.getCamera(camera));
+      let x = pos.x;
+      let y = pos.y;
+      label.div.style.transform = "translate(-50%, -50%) translate(" + x + "px," + y + "px)";
+    })
+
   }
   renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
 }
 
 export { initXR }
