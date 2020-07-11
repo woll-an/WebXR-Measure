@@ -24,8 +24,8 @@ function toScreenPosition(point, camera)
   vector.copy(point);
   vector.project(camera);
   
-  vector.x = Math.round((   vector.x + 1 ) * width  / 2 );
-  vector.y = Math.round(( - vector.y + 1 ) * height / 2 );
+  vector.x = (vector.x + 1) * width /2;
+  vector.y = (-vector.y + 1) * height/2;
   vector.z = 0;
 
   return vector
