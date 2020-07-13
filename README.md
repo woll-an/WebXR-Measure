@@ -2,6 +2,10 @@
 
 Augmented Reality Measure with WebXR
 
+## Compatibility
+
+The WebXR Device API is not yet compatible with all browsers. Check https://caniuse.com/#feat=webxr for more information.
+
 ## Instructions
 
 Navigate to [Demo](https://wonderful-albattani-95489f.netlify.app/) with your mobile device.
